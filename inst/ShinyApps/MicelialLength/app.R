@@ -33,6 +33,16 @@ names(choices_IMAGEM) <-
 # Nome dos tratamentos.
 choices_COMPONENTE <- getShinyOption(name = "labels", default = NULL)
 
+#-----------------------------------------------------------------------
+
+# Bloco usado para desenvolver a aplicação.
+if (interactive() && Sys.info()["user"] == "walmes") {
+    choices_COMPONENTE <- c("Plate", "Mycelium")
+    choices_IMAGEM <- dir(system.file("images", package = "ClickMetrics"),
+                          full.names = TRUE)
+    file_CSV <- "mytable.csv"
+}
+
 # Estilo para os botões.
 style_btn <- ".btn {display: block; margin: 0.5em 0;}"
 
@@ -41,26 +51,26 @@ style_btn <- ".btn {display: block; margin: 0.5em 0;}"
 
 ui <- fluidPage(
     # theme = shinytheme("yeti"),
-    headerPanel(title = "Mensuração de crescimento micelial"),
+    headerPanel(title = "Diameter measurament"),
     sidebarPanel(
         width = 3,
         selectInput(
             inputId = "IMAGEM",
-            label = "Imagem:",
+            label = "Image:",
             choices = choices_IMAGEM),
         radioButtons(
             inputId = "COMPONENTE",
-            label = "Componente:",
+            label = "Component:",
             choices = choices_COMPONENTE),
         textInput(
             inputId = "IDENTIFICACAO",
-            label = "Identificação:",
+            label = "Observation:",
             value = getShinyOption(name = "obs", default = NA),
-            placeholder = "Texto de identificação"),
+            placeholder = "Done by John Smith"),
         tags$head(tags$style(style_btn)),
         actionButton(
             inputId = "REGISTRAR",
-            label = "Registrar cliques",
+            label = "Record clicks",
             width = "100%",
             icon = icon("file-import"),
             # icon = icon("sdcard"),
@@ -71,7 +81,7 @@ ui <- fluidPage(
                 width = 6,
                 actionButton(
                     inputId = "DESFAZER",
-                    label = "Desfazer clique",
+                    label = "Undo",
                     width = "100%",
                     icon = icon("eraser"),
                     class = "btn btn-warning")),
@@ -79,13 +89,13 @@ ui <- fluidPage(
                 width = 6,
                 actionButton(
                     inputId = "RESTAURAR",
-                    label = "Restaurar:",
+                    label = "Restore",
                     width = "100%",
                     icon = icon("undo"),
                     class = "btn btn-info"))),
         actionButton(
             inputId = "EXIT",
-            label = "Encerrar/Sair",
+            label = "Exit",
             width = "100%",
             icon = icon("times-circle"),
             class = "btn btn-danger"),
@@ -112,6 +122,14 @@ emptify_vector <- function(vec) {
         vec[[i]] <- NULL
     }
     return(vec)
+}
+
+replace_null <- function(x, replace) {
+    if (is.null(x)) {
+        replace
+    } else {
+        x
+    }
 }
 
 server <- function(input, output, session) {
@@ -250,19 +268,17 @@ server <- function(input, output, session) {
         fmt <- paste(sep = "\n",
                      "x: %0.5f",
                      "y: %0.5f",
-                     "Componente: %s",
-                     "Imagem: %s",
-                     "Identificação: %s",
-                     "Cliques: %d",
-                     "Path: %s")
+                     "Image: %s",
+                     "Component: %s",
+                     "Obs: %s",
+                     "Clicks: %d")
         sprintf(fmt = fmt,
-                tail(CLICKS$x, n = 1),
-                tail(CLICKS$y, n = 1),
-                input$COMPONENTE,
+                replace_null(tail(CLICKS$x, n = 1), NA_real_),
+                replace_null(tail(CLICKS$y, n = 1), NA_real_),
                 input$IMAGEM,
+                input$COMPONENTE,
                 input$IDENTIFICACAO,
-                length(CLICKS$x),
-                getwd())
+                replace_null(length(CLICKS$x), 0))
     })
 }
 
