@@ -1,5 +1,5 @@
 Package: ClickMetrics
-Title: Measure length, areas and count objects on photos based on clicks
+Title: Measure length, area and count objects on images based on clicks
 Version: 0.1.0
 Date: 2019-10-01
 Authors@R: as.person(c(

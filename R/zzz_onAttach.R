@@ -12,7 +12,7 @@
                      pkg.info["Version"],
                      ifelse(is.na(pkg.info["Date"]),
                             yes = "",
-                            no = sprintf(" built at %s",
+                            no = sprintf(" built on %s",
                                          pkg.info["Date"])))
 
     line2 <- "For information, execute: packageDescription(\"ClickMetrics\")."

@@ -24,18 +24,18 @@
 #'              pattern = "\\.png$",
 #'              full.names = TRUE)
 #'
-#' micelial_length(
+#' diameter_measurer(
 #'     files = files,
 #'     labels = c("Plate", "Trat1"),
 #'     obs = "Done by Walmes",
 #'     csv = "my_clicks.csv")
 #'
 #' }
-micelial_length <- function(files,
-                            labels = "Plate",
-                            obs = Sys.info()["user"],
-                            csv = "my_clicks.csv",
-                            app_path = NULL) {
+diameter_measurer <- function(files,
+                              labels = "Plate",
+                              obs = Sys.info()["user"],
+                              csv = "my_clicks.csv",
+                              app_path = NULL) {
 
     if (!requireNamespace(package = "shiny", quietly = TRUE)) {
         stop(paste("`shiny` package not found.",
@@ -51,12 +51,12 @@ micelial_length <- function(files,
 
     if (is.null(app_path)) {
         # Endereço da aplicação shiny na raíz do pacote/projeto.
-        app_path <- "ShinyApps/MicelialLength"
+        app_path <- "ShinyApps/DiameterMeasurer"
         appDir <- system.file(app_path, package = "ClickMetrics")
         # Verifica existência do diretório.
         if (!dir.exists(appDir)) {
             stop(paste(
-                "Directory not found for `MicelialLength`.",
+                "Directory not found for `DiameterMeasurer`.",
                 "Please, try to reinstall `ClickMetrics`."),
                 call. = FALSE)
         }

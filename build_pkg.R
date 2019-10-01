@@ -13,7 +13,8 @@ wzRfun::pkgs_versions("ClickMetrics")
 devtools::document()
 
 # Faz verificação de conformidade do pacote.
-devtools::check(env_vars = c("_R_CHECK_LICENSE_" = FALSE))
+# devtools::check(env_vars = c("_R_CHECK_LICENSE_" = FALSE))
+devtools::check()
 
 # Gera o tar.gz do pacote.
 devtools::build(vignettes = FALSE,
@@ -51,7 +52,7 @@ files <- dir(path = system.file("images", package = "ClickMetrics"),
              pattern = "\\.png$",
              full.names = TRUE)
 
-micelial_length(
+diameter_measurer(
     files = files,
     labels = c("Plate", "Trat1"),
     obs = "Done by Walmes",
