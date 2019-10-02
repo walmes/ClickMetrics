@@ -7,7 +7,7 @@
 # Carrega conteúdo do pacote.
 devtools::load_all()
 
-wzRfun::pkgs_versions("ClickMetrics")
+# wzRfun::pkgs_versions("ClickMetrics")
 
 # Gera a documentação e escreve o NAMESPACE.
 devtools::document()

@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/walmes/ClickMetrics/master/inst/hexsticker/ClickMetrics.png" width="120px" align="right" display="block" style="padding-top: 2em; -webkit-filter: drop-shadow(0px 0px 3px #111);">
+<img src="https://raw.githubusercontent.com/walmes/ClickMetrics/master/inst/hexsticker/ClickMetrics.png" width="120px" align="right" display="block" style="padding-top: 2em; margin: 1em;">
 
 ClickMetrics
 ============
