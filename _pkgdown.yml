@@ -1,0 +1,4 @@
+template:
+  params:
+    bootswatch: lumen
+  path: inst/templates
