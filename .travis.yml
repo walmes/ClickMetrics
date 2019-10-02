@@ -1,0 +1,6 @@
+language: r
+cache: packages
+r_packages:
+  - shiny
+  - imager
+warnings_are_errors: false
