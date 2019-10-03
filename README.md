@@ -3,7 +3,7 @@
 ClickMetrics
 ============
 
-<!-- [![Build Status](https://travis-ci.org/walmes/ClickMetrics.svg?branch=master)](https://travis-ci.org/walmes/ClickMetrics) -->
+[![Build Status](https://travis-ci.org/walmes/ClickMetrics.svg?branch=master)](https://travis-ci.org/walmes/ClickMetrics)
 
 This project is a R package. The aim of `ClickMetrics` is to help on the
 extraction of data by mouse clicking on images. First it will be covered
@@ -67,15 +67,20 @@ library(ClickMetrics)
 # Show all visible objects.
 ls("package:ClickMetrics")
 
+# Get the citation.
+citation("ClickMetrics")
+
 # Open the documentation in browser.
 help(package = "ClickMetrics", help_type = "html")
 
-# Show all vignettes.
-browseVignettes(package = "ClickMetrics")
+# Lauch a ShinyApp.
+files <- dir(path = system.file("images", package = "ClickMetrics"),
+             pattern = "^petri.*\\.png$",
+             full.names = TRUE)
+files
 
-# Open a vignette.
-vignette(topic = "vignette_name_here", package = "ClickMetrics")
-
-# Get the citation.
-citation("ClickMetrics")
+diameter_measurer(files = files,
+                  labels = c("Plate", "Trat1", "Trat2"),
+                  obs = "Done with ClickMetrics",
+                  csv = "my_clicks.csv")
 ```
