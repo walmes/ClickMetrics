@@ -38,8 +38,10 @@ sessionInfo()
 # Gera a página em pkgdown do pacote.
 
 library(pkgdown)
+options(pkgdown.internet = FALSE)
 
 # Constrói os elementos da página do pacote.
+unlink("docs", recursive = TRUE)
 pkgdown::build_site()      # Todo o site que inclui tudo acima.
 
 #-----------------------------------------------------------------------
@@ -61,15 +63,19 @@ ls()
 #-----------------------------------------------------------------------
 # Zona de testes.
 
+devtools::load_all()
+
 files <- dir(path = system.file("images", package = "ClickMetrics"),
-             pattern = "\\.png$",
+             pattern = "^petri.*\\.png$",
              full.names = TRUE)
 files
 
-diameter_measurer(
-    files = files,
-    labels = c("Plate", "Trat1"),
-    obs = "Done by Walmes",
-    csv = "my_clicks.csv")
+tb <- diameter_measurer(files = files,
+                        labels = c("Plate", "Trat1", "Trat2"),
+                        obs = "Done with ClickMetrics",
+                        csv = "my_clicks.csv")
+str(tb)
+
+with(tb, by(cbind(x, y), INDICES = pair, FUN = dist))
 
 #-----------------------------------------------------------------------
