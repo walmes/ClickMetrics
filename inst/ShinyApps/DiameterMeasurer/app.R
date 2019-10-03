@@ -36,12 +36,12 @@ choices_COMPONENTE <- getShinyOption(name = "labels", default = NULL)
 #-----------------------------------------------------------------------
 
 # Bloco usado para desenvolver a aplicação.
-if (interactive() && Sys.info()["user"] == "walmes") {
-    choices_COMPONENTE <- c("Plate", "Mycelium")
-    choices_IMAGEM <- dir(system.file("images", package = "ClickMetrics"),
-                          full.names = TRUE)
-    file_CSV <- "mytable.csv"
-}
+# if (interactive() && Sys.info()["user"] == "walmes") {
+#     choices_COMPONENTE <- c("Plate", "Mycelium")
+#     choices_IMAGEM <- dir(system.file("images", package = "ClickMetrics"),
+#                           full.names = TRUE)
+#     file_CSV <- "mytable.csv"
+# }
 
 # Estilo para os botões.
 style_btn <- ".btn {display: block; margin: 0.5em 0;}"
@@ -106,8 +106,8 @@ ui <- fluidPage(
             outputId = "PLOT_IMAGEM",
             click = "IMAGE_CLICK",
             dblclick = "IMAGE_DBLCLICK",
-            width = "800px",
-            height = "800px"),
+            width = getShinyOption(name = "width", default = "800px"),
+            height = getShinyOption(name = "height", default = "800px")),
         tableOutput(outputId = "TABELA")
     ) # mainPanel().
 ) # fluidPage().
@@ -142,6 +142,7 @@ server <- function(input, output, session) {
         x = NULL,
         y = NULL,
         n = NULL,
+        pair = NULL,
         Component = NULL,
         Identification = NULL,
         Image = NULL)
@@ -151,14 +152,17 @@ server <- function(input, output, session) {
             CLICKS$x <- append(CLICKS$x, input$IMAGE_CLICK$x)
             CLICKS$y <- append(CLICKS$y, input$IMAGE_CLICK$y)
             CLICKS$n <- append(CLICKS$n, length(CLICKS$x))
-            CLICKS$Component <-
-                append(CLICKS$Component,
+            CLICKS$pair <-
+                append(CLICKS$pair,
+                       as.integer(ceiling(length(CLICKS$x)/2)))
+            CLICKS$component <-
+                append(CLICKS$component,
                        input$COMPONENTE)
-            CLICKS$Identification <-
-                append(CLICKS$Identification,
+            CLICKS$obs <-
+                append(CLICKS$obs,
                        input$IDENTIFICACAO)
-            CLICKS$Image <-
-                append(CLICKS$Image,
+            CLICKS$image <-
+                append(CLICKS$image,
                        input$IMAGEM)
         })
     observeEvent(
@@ -177,12 +181,14 @@ server <- function(input, output, session) {
             CLICKS$x <- head(CLICKS$x, n = -1)
             CLICKS$y <- head(CLICKS$y, n = -1)
             CLICKS$n <- head(CLICKS$n, n = -1)
-            CLICKS$Component <-
-                head(CLICKS$Component, n = -1)
-            CLICKS$Identification <-
-                head(CLICKS$Identification, n = -1)
-            CLICKS$Image <-
-                head(CLICKS$Image, n = -1)
+            CLICKS$pair <-
+                head(CLICKS$pair, n = -1)
+            CLICKS$component <-
+                head(CLICKS$component, n = -1)
+            CLICKS$obs <-
+                head(CLICKS$obs, n = -1)
+            CLICKS$image <-
+                head(CLICKS$image, n = -1)
         })
     observeEvent(
         eventExpr = input$RESTAURAR,
@@ -197,9 +203,10 @@ server <- function(input, output, session) {
                 x = CLICKS$x,
                 y = CLICKS$y,
                 n = CLICKS$n,
-                Component = CLICKS$Component,
-                Identification = CLICKS$Identification,
-                Image = CLICKS$Image,
+                pair = CLICKS$pair,
+                component = CLICKS$component,
+                obs = CLICKS$obs,
+                image = CLICKS$image,
                 stringsAsFactors = FALSE)
             return(tb)
         }
