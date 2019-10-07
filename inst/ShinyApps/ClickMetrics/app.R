@@ -10,6 +10,8 @@
 #-----------------------------------------------------------------------
 # Packages.
 
+# rm(list = objects())
+
 library(imager)
 library(shiny)
 library(shinyjs)
@@ -62,6 +64,16 @@ choices_TYPE <- c("Points" = "point",
 # CSS Style rules.
 style_btn <- ".btn {display: block; margin: 0.5em 0;}"
 style_GROUP <- "#GROUP {display: block; margin: 1em 0;}"
+style_imagebuttons <- "
+.image-buttons {
+    display: block;
+    margin-top: -20px;
+    margin-bottom: 15px;
+}"
+style_radiotype <- "#TYPE
+.radio-inline { width: 30%; }
+.radio-inline + .radio-inline { margin-left: 1%; }
+"
 
 #-----------------------------------------------------------------------
 # Frontend.
@@ -77,7 +89,9 @@ ui <- fluidPage(
             inputId = "IMAGE",
             label = "Image:",
             choices = choices_IMAGE),
+        tags$head(tags$style(style_imagebuttons)),
         fluidRow(
+            class = "image-buttons",
             column(
                 width = 6,
                 actionButton(
@@ -93,30 +107,35 @@ ui <- fluidPage(
                     label = "Next image",
                     width = "100%",
                     icon = icon("arrow-right")))),
+        hr(),
+        checkboxInput(
+            inputId = "PICK_RGB",
+            label = "Pick color at clicks?"),
+        tags$head(tags$style(style_radiotype)),
         radioButtons(
             inputId = "TYPE",
             label = "Type:",
-            choices = choices_TYPE),
+            choices = choices_TYPE,
+            inline = TRUE),
         numericInput(
             inputId = "MAX_PTS",
             label = "Number of points per group",
             value = 10L,
             min = 1L,
             step = 1L),
-        checkboxInput(
-            inputId = "GET_RGB",
-            label = "Get RGB color?"),
+        tags$head(tags$style(style_GROUP)),
+        htmlOutput(outputId = "GROUP", container = div),
+        hr(),
         radioButtons(
             inputId = "COMPONENT",
             label = "Component:",
             choices = choices_COMPONENT),
-        tags$head(tags$style(style_GROUP)),
-        htmlOutput(outputId = "GROUP", container = div),
         textInput(
             inputId = "OBSERVATION",
             label = "Observation:",
             value = getShinyOption(name = "obs", default = NA),
-            placeholder = "Done by John Smith"),
+            placeholder = "Done with ClickMetrics"),
+        hr(),
         actionButton(
             inputId = "REGISTER",
             label = "Record clicks",
@@ -205,10 +224,6 @@ resize_image <- function(img, max_size = 600) {
 }
 
 draw_clicks <- function(tb_clicks) {
-    with(tb_clicks,
-         points(x = x, y = y, col = "red", pch = 19, cex = 0.75))
-    with(tb_clicks,
-         text(x = x, y = y, labels = n, pos = 3))
     by(data = tb_clicks,
        INDICES = tb_clicks$group,
        FUN = function(g) {
@@ -225,10 +240,40 @@ draw_clicks <- function(tb_clicks) {
                }
            }
        })
+    with(tb_clicks,
+         points(x = x, y = y, col = "red", pch = 19, cex = 0.75))
+    with(tb_clicks,
+         text(x = x, y = y, labels = n, pos = 3))
+}
+
+enable_widgets <- function() {
+    enable(id = "TYPE")
+    enable(id = "IMAGE")
+    enable(id = "NEXT_IMAGE")
+    enable(id = "PREV_IMAGE")
+}
+
+disable_widgets <- function() {
+    disable(id = "TYPE")
+    disable(id = "IMAGE")
+    disable(id = "NEXT_IMAGE")
+    disable(id = "PREV_IMAGE")
+}
+
+pick_rgb <- function(img, x, y) {
+    rgb_color <- img[round(x)[1], round(y)[1], 1, ]
+    # img_array <- as.array(img)
+    # rgb_color <- img_array[round(x)[1], round(y)[1], 1, ]
+    color <- rgb(red = rgb_color[1],
+                 green = rgb_color[2],
+                 blue = rgb_color[3],
+                 alpha = rgb_color[4])
+    return(color)
 }
 
 server <- function(input, output, session) {
     observeEvent(
+        label = "observeEvent > input$EXIT",
         eventExpr = input$EXIT,
         handlerExpr = {
             stopApp()
@@ -237,16 +282,18 @@ server <- function(input, output, session) {
         x = NULL,
         y = NULL,
         n = NULL,
+        color = NULL,
         group = NULL,
         type = NULL,
         component = NULL,
         observation = NULL,
         image = NULL)
     CONTROL <- reactiveValues(
-        type_activated = TRUE,
+        control_activated = TRUE,
         image_number = 1L,
         group = 1L)
     observeEvent(
+        label = "observeEvent > input$NEXT_IMAGE",
         eventExpr = input$NEXT_IMAGE,
         handlerExpr = {
             # CONTROL$group <- 1L
@@ -258,6 +305,7 @@ server <- function(input, output, session) {
                 selected = choices_IMAGE[CONTROL$image_number])
         })
     observeEvent(
+        label = "observeEvent > input$PREV_IMAGE",
         eventExpr = input$PREV_IMAGE,
         handlerExpr = {
             # CONTROL$group <- 1L
@@ -268,21 +316,25 @@ server <- function(input, output, session) {
                 inputId = "IMAGE",
                 selected = choices_IMAGE[CONTROL$image_number])
         })
-    LOAD_IMAGE <- reactive({
-        # img <- imager::load.image(choices_IMAGE[2])
-        img <- imager::load.image(input$IMAGE)
-        CONTROL$group <- 1L
-        CONTROL$type_activated <- TRUE
-        shinyjs::enable(id = "TYPE")
-        resize_image(img = img)
-    })
+    LOAD_IMAGE <- reactive(
+        label = "reactive > LOAD_IMAGE",
+        x = {
+            # img <- imager::load.image(choices_IMAGE[2])
+            img <- imager::load.image(input$IMAGE)
+            CONTROL$group <- 1L
+            CONTROL$control_activated <- TRUE
+            enable_widgets()
+            resize_image(img = img)
+        })
     observeEvent(
-        eventExpr = input$IMAGE_CLICK$x,
+        label = "observeEvent > input$IMAGE_CLICK",
+        eventExpr = input$IMAGE_CLICK,
         handlerExpr = {
             # if (!is.null(CLICKS$x)) {
-            if (CONTROL$type_activated && !is.null(input$IMAGE_CLICK$x)) {
-                CONTROL$type_activated <- FALSE
-                shinyjs::disable(id = "TYPE")
+            if (CONTROL$control_activated &&
+                !is.null(input$IMAGE_CLICK$x)) {
+                CONTROL$control_activated <- FALSE
+                disable_widgets()
             }
             CLICKS$x <- append(CLICKS$x, input$IMAGE_CLICK$x)
             CLICKS$y <- append(CLICKS$y, input$IMAGE_CLICK$y)
@@ -301,8 +353,21 @@ server <- function(input, output, session) {
             CLICKS$image <-
                 append(CLICKS$image,
                        input$IMAGE)
+            if (!is.null(input$IMAGE_CLICK)) {
+                if (isolate(input$PICK_RGB)) {
+                    img <- LOAD_IMAGE()
+                    color <-
+                        pick_rgb(img = img,
+                                 x = input$IMAGE_CLICK$x,
+                                 y = input$IMAGE_CLICK$y)
+                } else {
+                    color <- NA
+                }
+                CLICKS$color <- append(CLICKS$color, color)
+            }
         })
     observeEvent(
+        label = "observeEvent > input$UNDO",
         eventExpr = input$UNDO,
         handlerExpr = {
             CLICKS$x <- head(CLICKS$x, n = -1)
@@ -314,50 +379,58 @@ server <- function(input, output, session) {
                 head(CLICKS$type, n = -1)
             CLICKS$component <-
                 head(CLICKS$component, n = -1)
-            CLICKS$obs <-
-                head(CLICKS$obs, n = -1)
+            CLICKS$observation <-
+                head(CLICKS$observation, n = -1)
             CLICKS$image <-
                 head(CLICKS$image, n = -1)
+            CLICKS$color <-
+                head(CLICKS$color, n = -1)
         })
     observeEvent(
+        label = "observeEvent > input$RESTORE",
         eventExpr = input$RESTORE,
         handlerExpr = {
-            CONTROL$type_activated <- TRUE
-            shinyjs::enable(id = "TYPE")
+            CONTROL$control_activated <- TRUE
+            enable_widgets()
             CONTROL$group <- 1L
             CLICKS <- emptify_vector(CLICKS)
         })
     observeEvent(
-        eventExpr = input$IMAGE_DBLCLICK$x,
+        label = "observeEvent > input$IMAGE_DBLCLICK",
+        eventExpr = input$IMAGE_DBLCLICK,
         handlerExpr = {
-            CONTROL$type_activated <- TRUE
-            shinyjs::enable(id = "TYPE")
+            CONTROL$control_activated <- TRUE
+            enable_widgets()
             CONTROL$group <- CONTROL$group + 1L
         })
     observeEvent(
-        eventExpr = input$IMAGE_CLICK$x,
+        label = "observeEvent > input$IMAGE_CLICK",
+        eventExpr = input$IMAGE_CLICK,
         handlerExpr = {
             cond <- sum(CLICKS$group == CONTROL$group) == input$MAX_PTS
             if (cond) {
-                CONTROL$type_activated <- TRUE
-                shinyjs::enable(id = "TYPE")
+                CONTROL$control_activated <- TRUE
+                enable_widgets()
                 CONTROL$group <- CONTROL$group + 1L
             }
         })
     output$GROUP <- renderText({
         sprintf("<strong>Group</strong>: %d", CONTROL$group)
     })
-    TB_CLICKS <- reactive({
-        if (is.null(CLICKS$x)) {
-            NULL
-        } else {
-            tb <- as.data.frame(reactiveValuesToList(CLICKS),
-                                stringsAsFactors = FALSE)
-            col <- c("image", "component", "x", "y",
-                     "type", "group", "n", "observation")
-            return(tb[, col])
-        }
-    })
+    TB_CLICKS <- reactive(
+        label = "reactive > TB_CLICKS",
+        x = {
+            if (is.null(CLICKS$x)) {
+                NULL
+            } else {
+                L <- reactiveValuesToList(CLICKS)
+                col <- c("image", "component", "x", "y", "color",
+                         "type", "group", "n", "observation")
+                tb <- as.data.frame(L[col],
+                                    stringsAsFactors = FALSE)
+                return(tb)
+            }
+        })
     output$PLOT_IMAGE <- renderPlot({
         img <- LOAD_IMAGE()
         par(mar = c(0.5, 0.5, 1.75, 0.5))
@@ -371,6 +444,22 @@ server <- function(input, output, session) {
             draw_clicks(tb_clicks)
         }
     }) # renderPlot()
+    # observeEvent(
+    #     eventExpr = input$IMAGE_CLICK,
+    #     handlerExpr = {
+    #         img <- LOAD_IMAGE()
+    #         if (!is.null(input$IMAGE_CLICK)) {
+    #             if (isolate(input$PICK_RGB)) {
+    #                 color <-
+    #                     pick_rgb(img = img,
+    #                              x = input$IMAGE_CLICK$x,
+    #                              y = input$IMAGE_CLICK$y)
+    #             } else {
+    #                 color <- NA
+    #             }
+    #             CLICKS$color <- append(CLICKS$color, color)
+    #         }
+    #     })
     output$TABLE_CLICK <- renderTable({
         TB_CLICKS()
     })
@@ -381,6 +470,7 @@ server <- function(input, output, session) {
                      "y: %0.5f",
                      "Clicks: %d",
                      "Type: %s",
+                     "Color: %s",
                      "Number: %d",
                      "RGB: %d",
                      "Image: %s",
@@ -393,8 +483,9 @@ server <- function(input, output, session) {
                 replace_null(tail(CLICKS$y, n = 1), NA_real_),
                 replace_null(length(CLICKS$x), 0),
                 input$TYPE,
+                replace_null(tail(CLICKS$color, n = 1), NA_character_),
                 input$MAX_PTS,
-                input$GET_RGB,
+                input$PICK_RGB,
                 input$IMAGE,
                 CONTROL$image_number,
                 input$COMPONENT,
@@ -402,6 +493,7 @@ server <- function(input, output, session) {
                 input$OBSERVATION)
     })
     observeEvent(
+        label = "observeEvent > input$REGISTER",
         eventExpr = input$REGISTER,
         handlerExpr = {
             fe <- file.exists(file_CSV)
@@ -423,8 +515,8 @@ server <- function(input, output, session) {
                 session = session,
                 inputId = "IMAGE",
                 selected = choices_IMAGE[CONTROL$image_number])
-            CONTROL$type_activated <- TRUE
-            shinyjs::enable(id = "TYPE")
+            CONTROL$control_activated <- TRUE
+            enable_widgets()
             CONTROL$group <- 1L
         })
 }
